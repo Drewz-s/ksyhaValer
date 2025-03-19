@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberTalk Forum 2.0</title>
+    <style>
+        :root {
+            --main-bg: #0a0a0a;
+            --accent: #8a2be2;
+            --text: #ffffff;
+            --card-bg: #1a1a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--main-bg);
+            color: var(--text);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+        }
+
+        .chat-box {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            height: 70vh;
+            overflow-y: auto;
+        }
+
+        .message {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 20px;
+            margin: 10px 0;
+            display: flex;
+            align-items: start;
+            gap: 15px;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .message-content {
+            flex-grow: 1;
+        }
+
+        .message-time {
+            font-size: 0.8em;
+            color: #8a8a8a;
+        }
+
+        .input-box {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .message-input {
+            flex-grow: 1;
+            background: #2a2a2a;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .send-btn {
+            background: linear-gradient(45deg, var(--accent), #ff00ff);
+            border: none;
+            padding: 0 25px;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .sidebar {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .settings-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .sticker-picker {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .sticker {
+            width: 100%;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .sticker:hover {
+            transform: scale(1.1);
+        }
+
+        .profile {
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 10px 0;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        .avatar-upload {
+            position: relative;
+            display: inline-block;
+        }
+
+        .avatar-upload input {
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .media-upload {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .media-upload input {
+            display: none;
+        }
+
+        .media-upload label {
+            background: #2a2a2a;
+            padding: 10px 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .media-upload label:hover {
+            background: #3a3a3a;
+        }
+
+        .video-player {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .sticker-message img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .message-input {
+                font-size: 14px;
+            }
+            
+            .tab-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="chat">Чат</button>
+                <button class="tab-btn" data-tab="settings">Настройки</button>
+                <button class="tab-btn" data-tab="profile">Профиль</button>
+            </div>
+
+            <div class="chat-box" id="chat"></div>
+
+            <div class="input-box">
+                <input type="text" class="message-input" placeholder="Ваше сообщение...">
+                <button class="send-btn">Отправить</button>
+                <button class="sticker-btn">🎨</button>
+            </div>
+
+            <div class="media-upload">
+                <label for="photo-upload">📷 Фото</label>
+                <label for="video-upload">🎥 Видео</label>
+                <input type="file" id="photo-upload" accept="image/*">
+                <input type="file" id="video-upload" accept="video/*">
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="online-users">
+                <h3>Участники</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-panel" id="settings">
+        <span class="modal-close">×</span>
+        <h2>Настройки</h2>
+        <label>Тема:
+            <select id="theme-select">
+                <option value="dark">Темная</option>
+                <option value="light">Светлая</option>
+            </select>
+        </label>
+        <label>Язык:
+            <select id="lang-select">
+                <option value="ru">Русский</option>
+                <option value="en">English</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="settings-panel" id="profile">
+        <span class="modal-close">×</span>
+        <h2>Профиль</h2>
+        <div class="avatar-upload">
+            <img src="https://via.placeholder.com/80" class="profile-avatar" id="avatar-preview">
+            <input type="file" id="avatar-upload" accept="image/*">
+        </div>
+        <input type="text" id="username" placeholder="Ваш ник">
+        <button class="save-profile">Сохранить</button>
+    </div>
+
+    <div class="settings-panel" id="stickers">
+        <span class="modal-close">×</span>
+        <div class="sticker-picker"></div>
+        <div class="admin-panel">
+            <input type="url" id="new-sticker" placeholder="URL стикера">
+            <button class="add-sticker">Добавить стикер</button>
+        </div>
+    </div>
+
+    <script>
+        class Forum {
+            constructor() {
+                this.messages = JSON.parse(localStorage.getItem('forum-messages')) || [];
+                this.onlineUsers = JSON.parse(localStorage.getItem('online-users')) || [];
+                this.loadData();
+                this.initEventListeners();
+                this.renderStickers();
+                this.renderMessages();
+                this.updateOnlineUsers();
+                setInterval(() => this.updateOnlineUsers(), 10000);
+            }
+
+            loadData() {
+                this.user = JSON.parse(localStorage.getItem('forum-user')) || { 
+                    username: 'Гость', 
+                    avatar: 'https://via.placeholder.com/40' 
+                };
+                this.stickers = JSON.parse(localStorage.getItem('stickers')) || [];
+            }
+
+            initEventListeners() {
+                document.querySelector('.send-btn').addEventListener('click', () => this.sendMessage());
+                document.querySelector('.sticker-btn').addEventListener('click', () => this.togglePanel('stickers'));
+                document.querySelector('.save-profile').addEventListener('click', () => this.saveProfile());
+                document.querySelector('.add-sticker').addEventListener('click', () => this.addSticker());
+                
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+                });
+
+                document.querySelectorAll('.modal-close').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        btn.parentElement.style.display = 'none';
+                    });
+                });
+
+                this.setupAvatarUpload();
+                this.setupLanguageSwitch();
+                this.setupMediaUpload();
+            }
+
+            sendMessage(content) {
+                const message = {
+                    user: this.user,
+                    content: content || document.querySelector('.message-input').value,
+                    timestamp: new Date().toLocaleTimeString(),
+                    isSticker: content?.startsWith('data:image'),
+                    isMedia: content?.startsWith('data:video') || content?.startsWith('data:image'),
+                    date: new Date().toISOString()
+                };
+
+                this.messages.push(message);
+                this.saveMessages();
+                this.renderMessages();
+            }
+
+            saveMessages() {
+                localStorage.setItem('forum-messages', JSON.stringify(this.messages));
+            }
+
+            renderMessages() {
+                const chatBox = document.querySelector('.chat-box');
+                chatBox.innerHTML = '';
+                this.messages.forEach(msg => {
+                    const messageElement = this.createMessageElement(msg);
+                    chatBox.appendChild(messageElement);
+                });
+            }
+
+            createMessageElement(msg) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                messageElement.innerHTML = `
+                    <img src="${msg.user.avatar}" class="message-avatar">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <strong>${msg.user.username}</strong>
+                            <span class="message-time">${msg.timestamp}</span>
+                        </div>
+                        ${msg.isSticker ? 
+                            `<div class="sticker-message"><img src="${msg.content}"></div>` : 
+                            msg.isMedia ?
+                                (msg.content.startsWith('data:video') ?
+                                    `<video class="video-player" controls><source src="${msg.content}" type="video/mp4"></video>` :
+                                    `<img src="${msg.content}" style="max-width: 100%; border-radius: 12px;">`) :
+                            `<p>${msg.content}</p>`}
+                    </div>
+                `;
+                return messageElement;
+            }
+
+            saveProfile() {
+                this.user = {
+                    username: document.getElementById('username').value,
+                    avatar: document.getElementById('avatar-preview').src
+                };
+                localStorage.setItem('forum-user', JSON.stringify(this.user));
+            }
+
+            addSticker() {
+                const url = document.getElementById('new-sticker').value;
+                if(url) {
+                    this.stickers.push(url);
+                    localStorage.setItem('stickers', JSON.stringify(this.stickers));
+                    this.renderStickers();
+                }
+            }
+
+            renderStickers() {
+                const container = document.querySelector('.sticker-picker');
+                container.innerHTML = this.stickers.map(url => 
+                    `<img src="${url}" class="sticker" onclick="forum.sendMessage('${url}')">`
+                ).join('');
+            }
+
+            switchTab(tab) {
+                document.querySelectorAll('.settings-panel').forEach(panel => 
+                    panel.style.display = 'none');
+                document.getElementById(tab).style.display = 'block';
+            }
+
+            togglePanel(panelId) {
+                const panel = document.getElementById(panelId);
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            setupAvatarUpload() {
+                const upload = document.getElementById('avatar-upload');
+                upload.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            this.user.avatar = event.target.result;
+                            document.getElementById('avatar-preview').src = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            setupMediaUpload() {
+                const photoUpload = document.getElementById('photo-upload');
+                const videoUpload = document.getElementById('video-upload');
+
+                photoUpload.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            this.sendMessage(event.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                videoUpload.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            this.sendMessage(event.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            updateOnlineUsers() {
+                const users = JSON.parse(localStorage.getItem('online-users')) || [];
+                this.user.lastActive = new Date().toISOString();
+                users[this.user.username] = this.user;
+                localStorage.setItem('online-users', JSON.stringify(users));
+                
+                const onlineList = document.querySelector('.online-users');
+                onlineList.innerHTML = '<h3>Участники (' + Object.keys(users).length + ')</h3>';
+                Object.values(users).forEach(user => {
+                    const userElement = document.createElement('div');
+                    userElement.className = 'user';
+                    userElement.innerHTML = `
+                        <img src="${user.avatar}" class="message-avatar">
+                        <span>${user.username}</span>
+                    `;
+                    onlineList.appendChild(userElement);
+                });
+            }
+
+            setupLanguageSwitch() {
+                document.getElementById('lang-select').addEventListener('change', (e) => {
+                    localStorage.setItem('forum-lang', e.target.value);
+                    this.applySettings();
+                });
+            }
+
+            applySettings() {
+                const lang = localStorage.getItem('forum-lang') || 'ru';
+                document.documentElement.lang = lang;
+            }
+        }
+
+        const forum = new Forum();
+    </script>
+</body>
+</html>
